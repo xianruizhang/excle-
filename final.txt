@@ -1,0 +1,107 @@
+# 安装并加载必要的包
+install.packages("openxlsx")
+install.packages("stringr")
+install.packages("writexl")
+library(writexl)
+library("openxlsx")
+library("dplyr")
+library("stringr")
+
+# 读取Excel文件
+readFilepath <- "D:/86151/milk/1698718864546导出数据.xlsx"
+exceldata <- read.xlsx(readFilepath)
+
+# 重命名列名
+names(exceldata) <- c("ON", "NAME", "specification", "unit", "number", "month", "dd", "sum", "Contact", "Phone", "Date", "remark")
+
+# 处理日期字符问题
+specificationsplit <- str_split_fixed(exceldata$specification, ":", n = 2)
+exceldata$specification <- specificationsplit[, 2]
+specificationsplit <- str_split_fixed(exceldata$specification, ";", n = 2)
+exceldata$specification <- specificationsplit[, 1]
+
+# 指定要保存的文件路径和文件名
+file_path <- "D:/86151/milk/添加.xlsx"
+
+# 使用write_xlsx函数保存数据框到Excel文件
+write_xlsx(exceldata, path = file_path)
+
+# 假设 reference_table 和 judgment_table 是你的两个数据框
+readFilepath_1<- "D:/86151/milk/example.xlsx"
+readFilepath_2<- "D:/86151/milk/添加.xlsx"
+reference_table<- read.xlsx(readFilepath_1)
+judgment_table <- read.xlsx(readFilepath_2)
+
+# 首先，根据 "ColumnA" 列的匹配，从 reference_table 中提取 "ColumnB" 的值
+matching_rows <- match(judgment_table$specification, reference_table$specification)
+
+# 创建一个逻辑向量，标记那些在 judgment_table 中未匹配到的行
+unmatched_rows <- is.na(matching_rows)
+
+# 填充匹配的行
+judgment_table$Y[!unmatched_rows] <- reference_table$Y[matching_rows[!unmatched_rows]]
+
+# 处理未匹配的行，可以设置默认值或采取其他措施
+judgment_table$Y[unmatched_rows] <- "默认值"  # 或者使用其他默认值
+
+# 最后，judgment_table 的 "ColumnB" 列中应该包含已填充的值
+
+# 指定要保存的文件路径和文件名
+file_path <- "D:/86151/milk/judgment_table.xlsx"
+
+# 使用write_xlsx函数保存数据框到Excel文件
+write_xlsx(judgment_table, path = file_path)
+
+# 读取Excel文件
+readFilepath <- "D:/86151/milk/judgment_table.xlsx"
+exceldata <- read.xlsx(readFilepath)
+
+# 重命名列名
+names(exceldata) <- c("ON", "NAME", "specification", "unit", "number", "month", "dd", "sum", "Contact", "Phone", "Date", "remark","Y")
+
+# 处理日期字符问题
+# 处理日期字符问题
+Ysplit <- str_split_fixed(exceldata$Y, "，", n = 7)
+exceldata$Y <- Ysplit
+# 删除原始 "Y" 列
+exceldata$Y <- NULL
+exceldata$Y <- Ysplit[, 1]  # 将矩阵的第一列赋值给新列 "Y"
+exceldata$Y2 <- Ysplit[, 2]  # 将矩阵的第二列赋值给新列 "Y2"
+exceldata$Y3 <- Ysplit[, 3]  # 将矩阵的第三列赋值给新列 "Y3"
+exceldata$Y4 <- Ysplit[, 4]  # 将矩阵的第四列赋值给新列 "Y4"
+exceldata$Y5 <- Ysplit[, 5]  # 将矩阵的第五列赋值给新列 "Y5"
+exceldata$Y6 <- Ysplit[, 6]  # 将矩阵的第六列赋值给新列 "Y6"
+exceldata$Y7 <- Ysplit[, 7]  # 将矩阵的第七列赋值给新列 "Y7"
+
+# 可选：如果你不需要 "Ysplit" 数据框，可以删除它
+rm(Ysplit)
+
+#输出exceldata
+# 指定要保存的文件路径和文件名
+file_path <- "D:/86151/milk/sumdata.xlsx"
+
+# 使用write_xlsx函数保存数据框到Excel文件
+write_xlsx(exceldata, path = file_path)
+# 读取Excel文件
+readFilepath <- "D:/86151/milk/sumdata.xlsx"
+sumdata <- read.xlsx(readFilepath)
+# 根据 specification 列进行分组
+sumdata <- sumdata %>%
+  group_by(specification)
+
+# 识别唯一值
+unique_values <- unique(sumdata$specification)
+
+# 创建一个目录以保存筛选后的文件
+dir.create("D:/86151/milk/filtered_data", showWarnings = FALSE)
+
+# 循环遍历每个唯一值并筛选数据
+for (value in unique_values) {
+  filtered_data <- filter(sumdata, specification == value)
+  
+  # 生成文件名
+  filename <- paste0("D:/86151/milk/filtered_data/", value, "_filtered_data.xlsx")
+  
+  # 保存筛选后的数据到Excel文件
+  write.xlsx(filtered_data, filename)
+}
